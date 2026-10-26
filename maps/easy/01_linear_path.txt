@@ -1,0 +1,14 @@
+
+# Easy Level 1: Simple linear path
+                      
+nb_drones: 5
+
+start_hub: startee 0 0 [color=blue] #dfDGDG    
+hub: waypoint1 1 0 [color=blue max_drones=1]
+hub: waypoint2 2 0 [color=blue]
+end_hub: goaddl 3 0 [color=red]
+
+connection: startee-waypoint1 [max_link_capacity=2]
+connection: waypoint1-waypoint2
+connection: waypoint2-goaddl
+
