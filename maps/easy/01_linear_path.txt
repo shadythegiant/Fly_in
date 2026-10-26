@@ -3,7 +3,8 @@
                       
 nb_drones: 5
 
-start_hub: startee 0 0 [color=blue] #dfDGDG    
+
+start_hub: startee  0 0 [color=blue]     
 hub: waypoint1 1 0 [color=blue max_drones=1]
 hub: waypoint2 2 0 [color=blue]
 end_hub: goaddl 3 0 [color=red]
