@@ -7,94 +7,6 @@ ALLOWED_CONN_KEYS = {"max_link_capacity"}
 ALLOWED_ZONE_TYPES = {"normal", "blocked", "restricted", "priority"}
 
 
-def parse_metadata(s: str, line_number: int, context: str) -> Dict[str, Any]:
-    """Extracts and validates key-value pairs from brackets based on context"""
-    """ ('hub' or 'connection')."""
-    metadata: Dict[str, Any] = {}
-    start_i = s.find('[')
-    end_i = s.find(']')
-
-    # 1. No brackets present
-    if start_i == -1 and end_i == -1:
-        return {}
-
-    # 2. Mismatched, backward, or trailing text after brackets
-    if (start_i == -1 or end_i == -1 or start_i > end_i
-            or s[end_i + 1:].strip()):
-        raise ValueError(
-            f"❌ -> Line {line_number}: Invalid metadata bracket syntax.")
-
-    meta_str = s[start_i + 1:end_i]
-    tokens = meta_str.split()
-
-    # 3. Reject empty brackets like [] or [   ]
-    if not tokens:
-        raise ValueError(
-            f"❌ -> Line {line_number}: Empty metadata brackets '[]' "
-            "are not allowed.")
-
-    for token in tokens:
-        if '=' not in token:
-            raise ValueError(
-                f"❌ -> Line {line_number}: Invalid key-value pair "
-                f"'{token}' (missing '=')."
-            )
-
-        key, value = token.split('=', 1)
-        if not key or not value:
-            raise ValueError(
-                f"❌ -> Line {line_number}: Missing key or value in '{token}'."
-            )
-
-        if key in metadata:
-            raise ValueError(
-                f"❌ -> Line {line_number}: Duplicate metadata key '{key}'."
-            )
-
-        # 4. Context-specific key whitelist check
-        if context == "hub" and key not in ALLOWED_HUB_KEYS:
-            raise ValueError(
-                f"❌ -> Line {line_number}: Invalid hub metadata key '{key}'."
-            )
-        if context == "connection" and key not in ALLOWED_CONN_KEYS:
-            raise ValueError(
-                f"❌ -> Line {line_number}: Invalid connection metadata key "
-                f"'{key}'."
-            )
-
-        # 5. Value validation (Notice the flat if / elif / elif alignment!)
-        if key == "zone":
-            if value not in ALLOWED_ZONE_TYPES:
-                raise ValueError(
-                    f"❌ -> Line {line_number}: Invalid zone type '{value}'."
-                )
-            metadata[key] = value
-
-        elif key in ("max_drones", "max_link_capacity"):
-            try:
-                num = int(value)
-            except ValueError:
-                raise ValueError(
-                    f"❌ -> Line {line_number}: '{key}' must be an integer, "
-                    f"got '{value}'."
-                )
-            if num <= 0:
-                raise ValueError(
-                    f"❌ -> Line {line_number}: '{key}' must be > 0, got {num}."
-                )
-            metadata[key] = num
-
-        elif key == "color":
-            if not value.isalpha():
-                raise ValueError(
-                    f"❌ -> Line {line_number}: Invalid color '{value}' "
-                    "(must be alphabetic)."
-                )
-            metadata[key] = value
-
-    return metadata
-
-
 class Parser:
     """Reads a Fly-In map file and populates the Graph object."""
 
@@ -172,7 +84,7 @@ class Parser:
 
     def _parse_hub(self, data: str, line_number: int, hub_type: str) -> None:
         """Extracts zone coordinates and metadata."""
-        metadata = parse_metadata(data, line_number, context="hub")
+        metadata = self._parse_metadata(data, line_number, context="hub")
 
         bracket_idx = data.find('[')
         if bracket_idx != -1:
@@ -213,7 +125,8 @@ class Parser:
 
     def _parse_connection(self, data: str, line_number: int) -> None:
         """Extracts connection edges and link capacities."""
-        metadata = parse_metadata(data, line_number, context="connection")
+        metadata = self._parse_metadata(
+            data, line_number, context="connection")
 
         bracket_idx = data.find('[')
         if bracket_idx != -1:
@@ -234,3 +147,96 @@ class Parser:
             self.graph.add_edge(zone_a, zone_b, metadata)
         except Exception as e:
             raise ValueError(f"❌ -> Line {line_number}: {e}")
+
+    def _parse_metadata(
+        self, s: str, line_number: int, context: str
+    ) -> Dict[str, Any]:
+
+        metadata: Dict[str, Any] = {}
+        start_i = s.find('[')
+        end_i = s.find(']')
+
+        # 1. No brackets present
+        if start_i == -1 and end_i == -1:
+            return {}
+
+        # 2. Mismatched, backward, or trailing text after brackets
+        if (start_i == -1 or end_i == -1 or start_i > end_i
+                or s[end_i + 1:].strip()):
+            raise ValueError(
+                f"❌ -> Line {line_number}: Invalid metadata bracket syntax.")
+
+        meta_str = s[start_i + 1:end_i]
+        tokens = meta_str.split()
+
+        # 3. Reject empty brackets like [] or [   ]
+        if not tokens:
+            raise ValueError(
+                f"❌ -> Line {line_number}: Empty metadata brackets '[]' "
+                "are not allowed.")
+
+        for token in tokens:
+            if '=' not in token:
+                raise ValueError(
+                    f"❌ -> Line {line_number}: Invalid key-value pair "
+                    f"'{token}' (missing '=')."
+                )
+
+            key, value = token.split('=', 1)
+            if not key or not value:
+                raise ValueError(
+                    f"❌ -> Line {line_number}: Missing key or value in "
+                    f"'{token}'."
+                )
+
+            if key in metadata:
+                raise ValueError(
+                    f"❌ -> Line {line_number}: Duplicate metadata key '{key}'."
+                )
+
+            # 4. Context-specific key whitelist check
+            if context == "hub" and key not in ALLOWED_HUB_KEYS:
+                raise ValueError(
+                    f"❌ -> Line {line_number}: Invalid hub metadata key "
+                    f"'{key}'."
+                )
+            if context == "connection" and key not in ALLOWED_CONN_KEYS:
+                raise ValueError(
+                    f"❌ -> Line {line_number}: Invalid connection metadata key"
+                    f"'{key}'."
+                )
+
+            # 5. Value validation (Notice the flat if / elif / elif alignment!)
+            if key == "zone":
+                if value not in ALLOWED_ZONE_TYPES:
+                    raise ValueError(
+                        f"❌ -> Line {line_number}: Invalid zone type "
+                        f"'{value}'."
+                    )
+                metadata[key] = value
+
+            elif key in ("max_drones", "max_link_capacity"):
+                try:
+                    num = int(value)
+                except ValueError:
+                    raise ValueError(
+                        f"❌ -> Line {line_number}: '{key}' must be an "
+                        "integer, "
+                        f"got '{value}'."
+                    )
+                if num <= 0:
+                    raise ValueError(
+                        f"❌ -> Line {line_number}: '{key}' must be > 0, "
+                        f"got {num}."
+                    )
+                metadata[key] = num
+
+            elif key == "color":
+                if not value.isalpha():
+                    raise ValueError(
+                        f"❌ -> Line {line_number}: Invalid color '{value}' "
+                        "(must be alphabetic)."
+                    )
+                metadata[key] = value
+
+        return metadata

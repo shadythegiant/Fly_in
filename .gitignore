@@ -1,0 +1,18 @@
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# mypy cache
+.mypy_cache/
+
+# flake8 cache
+.flake8_cache/
+
+# pytest cache
+.pytest_cache/
