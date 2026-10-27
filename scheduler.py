@@ -13,14 +13,12 @@ class Scheduler:
         drones: List[Drone],
         start_hub: str,
         end_hub: str,
-        capacity_mode: bool
     ) -> None:
         self.graph = graph
         self.drones = drones
         self.start_hub = start_hub
         self.end_hub = end_hub
         self.turn_number = 0
-        self.capacity_mode = capacity_mode
 
         # Room capacities: How many drones are currently in each zone?
         self.room_occupancy: Dict[str, int] = {
@@ -162,13 +160,6 @@ class Scheduler:
             self.turn_number += 1
             self.play_turn()
 
-    def _print_capacity(self) -> None:
-        zones = [f" {k} : {v}/ {self.get_max_room_capacity(k)} drones"
-                 for k, v in self.room_occupancy.items() if v > 0]
-        conns = [
-            f"Connection {k}: {v}/{int(self.get_max_link_capacity(*k.split('-')))} capacity used" for k, v in self.connection_occupancy.items() if v > 0]
-        print(" " + ",".join(zones + conns))
-
     def play_turn(self) -> None:
         """Executes a single tick of the simulation."""
         turn_output: List[str] = []
@@ -280,8 +271,7 @@ class Scheduler:
         if turn_output:
             turn_output.sort(key=lambda x: int(x.split("-")[0][1:]))
             print(" ".join(turn_output))
-        if self.capacity_mode:
-            self._print_capacity()
+
         for conn_key in normal_links_used:
             self.connection_occupancy[conn_key] -= 1
 

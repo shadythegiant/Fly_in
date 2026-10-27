@@ -9,8 +9,6 @@ def main() -> None:
     # 1. Handle Command Line Arguments
     args = [arg for arg in sys.argv[1:] if not arg.startswith("--")]
     visual_mode = "--visual" in sys.argv
-    capacity_mode = "--capacity-info" in sys.argv
-
     if len(args) != 1:
         print(
             "Usage: python3 main.py <map_file.txt> [--visual]",
@@ -69,7 +67,7 @@ def main() -> None:
         drones.append(drone)
 
     # 7. Start Air Traffic Control
-    scheduler = Scheduler(graph, drones, start_node, end_node, capacity_mode)
+    scheduler = Scheduler(graph, drones, start_node, end_node)
     scheduler.run_simulation()
     print(f"\n--- Simulation Complete in {scheduler.turn_number} Turns ---")
     if visual_mode:
